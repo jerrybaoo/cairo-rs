@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 cairo-felt = { path = "../felt", default-features = false, features = [
-    "alloc",
+    "alloc", "parity-scale-codec"
 ] }
-cairo-vm = { path = "../vm", default-features = false, features = ["cairo-1-hints"] }
+cairo-vm = { path = "../vm", default-features = false, features = ["cairo-1-hints", "parity-scale-codec"] }
 
 wee_alloc = "0.4.5"
 

@@ -17,7 +17,13 @@ std = [
     "starknet-crypto/std",
     "parse-hyperlinks/std",
     "felt/std",
-    "num-prime",
+    "dep:num-prime",
+    # Optional deps
+    "parity-scale-codec?/std",
+    "cairo-lang-casm-contract-class?/std",
+    "cairo-lang-casm?/std",
+    "ark-ff?/std",
+    "ark-std?/std",
 ]
 cairo-1-hints = [
     "dep:cairo-lang-casm-contract-class",
@@ -34,6 +40,7 @@ test_utils = [
 ] # This feature will reference every test-oriented feature
 skip_next_instruction_hint = []
 hooks = []
+parity-scale-codec = ["dep:parity-scale-codec", "felt/parity-scale-codec"]
 
 [dependencies]
 mimalloc = { workspace = true, optional = true }
@@ -68,14 +75,12 @@ num-prime = { version = "0.4.3", features = ["big-int"], optional = true }
 # There is a proposal for extending nom::delimited to use this function:
 # https://github.com/Geal/nom/issues/1253
 parse-hyperlinks = { workspace = true }
-felt = { workspace = true, features = ["parity-scale-codec"] }
+felt = { workspace = true }
 bitvec = { workspace = true }
 
 # Dependencies for cairo-1-hints feature
 cairo-lang-casm = { workspace = true, optional = true }
 cairo-lang-casm-contract-class = { workspace = true, optional = true }
-
-# TODO: check these dependencies for wasm compatibility
 ark-ff = { workspace = true, optional = true }
 ark-std = { workspace = true, optional = true }
 
