@@ -109,18 +109,24 @@ impl Encode for SharedProgramData {
             .collect::<Vec<(u64, Vec<HintParams>)>>();
 
         // Convert the hashmap to a vec because it's encodable.
-        let instruction_locations: Option<Vec<(u64, InstructionLocation)>> =
+        let mut instruction_locations: Option<Vec<(u64, InstructionLocation)>> =
             self.instruction_locations.as_ref().map(|i| {
                 i.iter()
                     .map(|(id, location)| (*id as u64, location.clone()))
                     .collect::<Vec<_>>()
             });
 
-        let identifiers = self
+        if let Some(il) = instruction_locations.as_mut() {
+            il.sort_by(|a, b| a.0.cmp(&b.0));
+        }
+
+        let mut identifiers = self
             .identifiers
             .iter()
             .map(|(s, i)| (s.clone(), i.clone()))
             .collect::<Vec<(String, Identifier)>>();
+
+        identifiers.sort_by(|a, b| a.0.cmp(&b.0));
 
         parity_scale_codec::Encode::encode_to(&self.data, dest);
         parity_scale_codec::Encode::encode_to(&hints, dest);
@@ -216,11 +222,13 @@ pub struct Program {
 #[cfg(feature = "parity-scale-codec")]
 impl Encode for Program {
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
-        let constants = self
+        let mut constants = self
             .constants
             .iter()
             .map(|(s, f)| (s.clone(), f.clone()))
             .collect::<Vec<(String, Felt252)>>();
+
+        constants.sort_by(|a, b| a.0.cmp(&b.0));
 
         parity_scale_codec::Encode::encode_to(&self.shared_program_data, dest);
         parity_scale_codec::Encode::encode_to(&constants, dest);
