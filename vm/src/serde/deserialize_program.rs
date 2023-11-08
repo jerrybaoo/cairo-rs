@@ -36,6 +36,7 @@ use num_traits::{Num, Pow, Zero};
 use parity_scale_codec::{Decode, Encode};
 use serde::{de, de::MapAccess, de::SeqAccess, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Number;
+use sha3::{Digest, Sha3_256};
 
 #[cfg(all(feature = "arbitrary", feature = "std"))]
 use arbitrary::{self, Arbitrary, Unstructured};
@@ -111,11 +112,13 @@ pub struct FlowTrackingData {
 #[cfg(feature = "parity-scale-codec")]
 impl Encode for FlowTrackingData {
     fn encode_to<T: parity_scale_codec::Output + ?Sized>(&self, dest: &mut T) {
-        let reference_ids = self
+        let mut reference_ids = self
             .reference_ids
             .iter()
             .map(|(s, v)| (s.clone(), *v as u64))
             .collect::<Vec<_>>();
+
+        reference_ids.sort_by(|a, b| a.0.cmp(&b.0));
 
         parity_scale_codec::Encode::encode_to(&self.ap_tracking, dest);
         parity_scale_codec::Encode::encode_to(&reference_ids, dest);
@@ -236,7 +239,13 @@ pub struct Identifier {
 impl Encode for Identifier {
     fn encode(&self) -> Vec<u8> {
         let val = self.clone();
-        let members: Option<Vec<(String, Member)>> = val.members.map(|m| m.into_iter().collect());
+        let mut members: Option<Vec<(String, Member)>> =
+            val.members.map(|m| m.into_iter().collect());
+
+        if let Some(m) = members.as_mut() {
+            m.sort_by(|a, b| a.0.cmp(&b.0));
+        }
+
         (
             val.pc.map(|v| v as u64),
             val.type_,
@@ -2204,5 +2213,28 @@ mod tests {
             deserialization_result.unwrap_err(),
             ProgramError::InvalidHintPc(1, 1)
         );
+    }
+
+    #[test]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_program_parity_codec_consistency() {
+        let reader =
+            include_bytes!("../../../cairo_programs/manually_compiled/valid_program_a.json");
+
+        let program0: Program = deserialize_and_parse_program(reader, Some("main"))
+            .expect("Failed to deserialize program0");
+
+        let program1: Program = deserialize_and_parse_program(reader, Some("main"))
+            .expect("Failed to deserialize program1");
+
+        assert_eq!(program0, program1);
+
+        let mut hasher0 = Sha3_256::new();
+        hasher0.update(program0.encode());
+
+        let mut hasher1 = Sha3_256::new();
+        hasher1.update(program1.encode());
+
+        assert_eq!(hasher0.finalize(), hasher1.finalize());
     }
 }
